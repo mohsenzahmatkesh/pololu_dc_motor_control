@@ -9,10 +9,10 @@ volatile long Right_counter = 0;
 volatile long Left_counter = 0;
 
 
-float Kp = 0.8;  // Start with 0.5-1.0
-float Ki = 0.1;  // Start with 0.05-0.2
-int Target_Counts_left = 50;  // Desired counts per interval
-int Target_Counts_right = 50;
+float Kp = 0.8;  
+float Ki = 0.1;  
+int Target_Counts_left = 10;  
+int Target_Counts_right = 10;
 
 
 float integral_right = 0;
@@ -54,19 +54,15 @@ void loop() {
     int error_right = Target_Counts_right - actual_right;
     int error_left = Target_Counts_left - actual_left;
 
-    // Update integrals with anti-windup
     integral_right += error_right;
     integral_left += error_left;
 
-    // Calculate PWM values
     int pwm_right = Kp * error_right + Ki * integral_right;
     int pwm_left = Kp * error_left + Ki * integral_left;
 
-    // Pre-constrain for anti-windup check
     int constrained_right = constrain(pwm_right, 0, 255);
     int constrained_left = constrain(pwm_left, 0, 255);
 
-    // Anti-windup: Only integrate if not saturated
     if(pwm_right == constrained_right) {
       integral_right += error_right;
     } else {
@@ -80,22 +76,21 @@ void loop() {
       integral_left = constrain(integral_left, -integral_limit, integral_limit);
     }
 
-    // Apply constrained PWM
+
     pwm_right = constrained_right;
     pwm_left = constrained_left;
 
 
-    // // Constrain PWM outputs
     // pwm_right = constrain(pwm_right, 0, 255);
     // pwm_left = constrain(pwm_left, 0, 255);
 
-    // Drive motors backward
+
     analogWrite(RIGHT_FORWARD, 0);
     analogWrite(RIGHT_BACKWARD, pwm_right);
     analogWrite(LEFT_FORWARD, 0);
     analogWrite(LEFT_BACKWARD, pwm_left);
 
-    // Serial output
+
     Serial.print("Target: "); Serial.print(Target_Counts_right);
     Serial.print(" | Actual R: "); Serial.print(actual_right);
     Serial.print(" L: "); Serial.print(actual_left);
