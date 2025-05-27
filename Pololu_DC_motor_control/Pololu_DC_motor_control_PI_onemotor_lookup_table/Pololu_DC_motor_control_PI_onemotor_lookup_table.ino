@@ -1,10 +1,14 @@
 #define LEFT_FORWARD   4
 #define LEFT_BACKWARD  18
-#define LEFT_ENCODER_PIN 35   
+#define LEFT_ENCODER_PIN 35
 
+#define SWITCH1_PIN 22
+#define SWITCH2_PIN 23
+
+//Feedback
 volatile long Left_counter = 0;
 
-
+// Control params
 float Kp = 0.8;  // Start with 0.5-1.0
 float Ki = 0.1;  // Start with 0.05-0.2
 int Target_Counts_left = 50;  
@@ -15,15 +19,20 @@ unsigned long last_time = 0;
 const int interval = 100;  // 100ms control period
 const float integral_limit = 500; 
 
+// switches
+bool reverse_direction = false;
+bool last_switch_state = HIGH;
+
 void setup() {
   Serial.begin(115200);
   while(!Serial);  
   
   pinMode(LEFT_FORWARD, OUTPUT);
   pinMode(LEFT_BACKWARD, OUTPUT);
-
-
   pinMode(LEFT_ENCODER_PIN, INPUT_PULLUP);
+  pinMode(SWITCH1_PIN, INPUT_PULLUP);
+  pinMode(SWITCH2_PIN, INPUT_PULLUP);
+
   attachInterrupt(digitalPinToInterrupt(LEFT_ENCODER_PIN), []{Left_counter++;}, RISING);
 
   Serial.println("PI Controller Ready");
@@ -56,8 +65,20 @@ int lookup_pwm(int target_counts) {
 
 void loop() {
   unsigned long now = millis();
+
+  bool current_switch_state = digitalRead(SWITCH1_PIN);
+  if (last_switch_state == HIGH && current_switch_state == LOW) {
+    reverse_direction = !reverse_direction;  // Toggle direction
+    delay(200);  // Basic debounce
+  }
+  last_switch_state = current_switch_state;
+
   
   if(now - last_time >= interval) {
+  
+    bool switch1_state = digitalRead(SWITCH1_PIN) == LOW;
+    bool switch2_state = digitalRead(SWITCH2_PIN) == LOW;
+
    
     noInterrupts();
     int actual_left = Left_counter;
@@ -66,9 +87,6 @@ void loop() {
 
     int error_left = Target_Counts_left - actual_left;
 
-    // if (abs(error_left) >= 5) {
-    //   integral_left = 0;
-    // }
 
     integral_left += error_left;
     int pwm_left = Kp * error_left + Ki * integral_left;
@@ -88,12 +106,18 @@ void loop() {
       int lookup_value = lookup_pwm(Target_Counts_left);
       pwm_left = lookup_value;
     }
-    // // Constrain PWM outputs
-    // pwm_right = constrain(pwm_right, 0, 255);
-    // pwm_left = constrain(pwm_left, 0, 255);
 
-    analogWrite(LEFT_FORWARD, 0);
-    analogWrite(LEFT_BACKWARD, pwm_left);
+
+    // analogWrite(LEFT_FORWARD, 0);
+    // analogWrite(LEFT_BACKWARD, pwm_left);
+
+    if (reverse_direction) {
+      analogWrite(LEFT_FORWARD, pwm_left);
+      analogWrite(LEFT_BACKWARD, 0);
+    } else {
+      analogWrite(LEFT_FORWARD, 0);
+      analogWrite(LEFT_BACKWARD, pwm_left);
+    }
 
     Serial.print("Target: ");
     Serial.print(Target_Counts_left);
