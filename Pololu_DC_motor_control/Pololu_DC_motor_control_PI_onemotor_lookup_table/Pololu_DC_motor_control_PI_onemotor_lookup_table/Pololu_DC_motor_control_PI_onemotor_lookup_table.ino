@@ -16,12 +16,13 @@ int Target_Counts_left = 50;
 
 float integral_left = 0;
 unsigned long last_time = 0;
-const int interval = 100;  // 100ms control period
+const int interval = 50;  // 100ms control period
 const float integral_limit = 500; 
 
 // switches
 bool reverse_direction = false;
-bool last_switch_state = HIGH;
+bool last_switch1_state = HIGH;
+bool last_switch2_state = HIGH;
 
 void setup() {
   Serial.begin(115200);
@@ -66,12 +67,25 @@ int lookup_pwm(int target_counts) {
 void loop() {
   unsigned long now = millis();
 
+  if (Serial.available()) {
+  char cmd = Serial.read();
+  if (cmd == 'F') reverse_direction = false;
+  else if (cmd == 'R') reverse_direction = true;
+  }
+
   bool current_switch_state = digitalRead(SWITCH1_PIN);
-  if (last_switch_state == HIGH && current_switch_state == LOW) {
+  if (last_switch1_state == HIGH && current_switch_state == LOW) {
     reverse_direction = !reverse_direction;  // Toggle direction
     delay(200);  // Basic debounce
   }
-  last_switch_state = current_switch_state;
+  last_switch1_state = current_switch_state;
+
+  bool current_switch2_state = digitalRead(SWITCH2_PIN);
+  if (last_switch2_state == HIGH && current_switch2_state == LOW) {
+    Target_Counts_left = (Target_Counts_left == 50) ? 100 : 50;  // Toggle between 50 and 100
+    delay(200);  // Debounce
+  }
+  last_switch2_state = current_switch2_state;
 
   
   if(now - last_time >= interval) {
