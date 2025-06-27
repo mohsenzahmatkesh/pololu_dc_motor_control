@@ -5,6 +5,15 @@
 #define RIGHT_ENCODER_PIN 34  
 #define LEFT_ENCODER_PIN 35   
 
+#define mot_mir_vrt_a1  0
+#define mot_mir_vrt_a2 4
+#define mot_cam_hrz_b1   2
+#define mot_cam_hrz_b2  15
+#define sen_mir_vrt_vel_a 35  
+#define sen_mir_vrt_vel_b 32  
+#define sen_cam_vel_a 33   
+#define sen_cam_vel_b 25
+
 volatile long Right_counter = 0;
 volatile long Left_counter = 0;
 
@@ -25,6 +34,7 @@ void setup() {
   Serial.begin(115200);
   while(!Serial);  // Wait for serial connection
   
+
   pinMode(RIGHT_FORWARD, OUTPUT);
   pinMode(RIGHT_BACKWARD, OUTPUT);
   pinMode(LEFT_FORWARD, OUTPUT);
@@ -35,6 +45,18 @@ void setup() {
   pinMode(LEFT_ENCODER_PIN, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(RIGHT_ENCODER_PIN), []{Right_counter++;}, RISING);
   attachInterrupt(digitalPinToInterrupt(LEFT_ENCODER_PIN), []{Left_counter++;}, RISING);
+
+  pinMode(mot_mir_vrt_a1, OUTPUT);
+  pinMode(mot_mir_vrt_a2, OUTPUT);
+  pinMode(mot_cam_hrz_b1, OUTPUT);
+  pinMode(mot_cam_hrz_b2, OUTPUT);
+
+
+  pinMode(sen_mir_vrt_vel_a, INPUT_PULLUP);
+  pinMode(sen_cam_vel_a, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(sen_mir_vrt_vel_a), []{Right_counter++;}, RISING);
+  attachInterrupt(digitalPinToInterrupt(sen_cam_vel_a), []{Left_counter++;}, RISING);
+
 
   Serial.println("PI Controller Ready");
 }
@@ -66,7 +88,9 @@ void loop() {
     if(pwm_right == constrained_right) {
       integral_right += error_right;
     } else {
+
       // Clamp integral when saturated
+
       integral_right = constrain(integral_right, -integral_limit, integral_limit);
     }
 
@@ -85,10 +109,17 @@ void loop() {
     // pwm_left = constrain(pwm_left, 0, 255);
 
 
+
     analogWrite(RIGHT_FORWARD, 0);
     analogWrite(RIGHT_BACKWARD, pwm_right);
     analogWrite(LEFT_FORWARD, 0);
     analogWrite(LEFT_BACKWARD, pwm_left);
+
+    analogWrite(mot_mir_vrt_a1, 0);
+    analogWrite(mot_mir_vrt_a2, pwm_right);
+    analogWrite(mot_cam_hrz_b1, 0);
+    analogWrite(mot_cam_hrz_b2, pwm_left);
+
 
 
     Serial.print("Target: "); Serial.print(Target_Counts_right);
