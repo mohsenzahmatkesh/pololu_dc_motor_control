@@ -1,16 +1,4 @@
-#define mot_mir_vrt_a1  0
-#define mot_mir_vrt_a2 4
-#define mot_cam_hrz_b1   2
-#define mot_cam_hrz_b2  15
-#define sen_mir_vrt_vel_a 35  
-#define sen_mir_vrt_vel_b 32  
-#define sen_cam_vel_a 33   
-#define sen_cam_vel_b 25
-//#define sw_mir_top_l 13
-//#define sw_mir_bot_l 9
-
-#define SWITCH1_PIN 22
-#define SWITCH2_PIN 23
+#include "config.h"
 
 //Feedback
 volatile long sen_mir_vrt_vel_a_count = 0;
